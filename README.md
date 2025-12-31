@@ -1,4 +1,4 @@
-# HoyFui😝
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -50,7 +50,6 @@
     .semana-header div {
       font-weight: bold;
       text-align: center;
-      color: #003049;
     }
     .dia {
       cursor: pointer;
@@ -61,7 +60,6 @@
       font-weight: bold;
       position: relative;
       transition: background 0.3s;
-      color: #003049;
     }
     .dia:hover {
       background: #F0932B;
@@ -75,10 +73,6 @@
       width: 100%;
       border-radius: 6px;
       cursor: pointer;
-      transition: transform 0.2s;
-    }
-    .foto-dia-img:hover {
-      transform: scale(1.05);
     }
     .icono-foto {
       position: absolute;
@@ -92,28 +86,29 @@
       max-height: 250px;
       display: none;
       border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
-    #cargar-foto-btn {
+    button {
       margin-top: 15px;
-      display: none;
       background: #36A0CE;
       color: white;
       border: none;
       padding: 10px 20px;
-      border-radius: 5px;
+      border-radius: 6px;
       cursor: pointer;
+      font-size: 15px;
     }
-    #cargar-foto-btn:hover {
-      background: #003049;
+    #descargar-fotos-btn {
+      background: #00b894;
     }
   </style>
 </head>
+
 <body>
+
   <h1>Contador de Días de Gimnasio</h1>
   <div class="contador">Has ido <span id="contador">0</span> días al gimnasio este año.</div>
 
-  <label for="mes" style="text-align:center; display:block;">Selecciona el mes:</label>
+  <label style="text-align:center;">Selecciona el mes:</label>
   <select id="mes" class="mes-selector"></select>
 
   <div class="calendarios">
@@ -131,173 +126,137 @@
     </div>
   </div>
 
-  <button id="cargar-foto-btn">Subir Foto</button>
-  <input type="file" accept="image/*" capture="environment" id="foto-input" style="display: none;">
-  <img id="foto-preview" src="" alt="Foto del día">
+  <button id="cargar-foto-btn">Subir foto al día seleccionado</button>
+  <button id="descargar-fotos-btn">📥 Descargar todas las fotos</button>
 
-  <script>
-    const contadorSpan = document.getElementById('contador');
-    const diasDiv = document.getElementById('dias');
-    const fotoDiasDiv = document.getElementById('foto-dias');
-    const mesSelect = document.getElementById('mes');
-    const fotoInput = document.getElementById('foto-input');
-    const fotoPreview = document.getElementById('foto-preview');
-    const cargarFotoBtn = document.getElementById('cargar-foto-btn');
+  <input type="file" accept="image/*" id="foto-input" style="display:none">
+  <img id="foto-preview">
 
-    const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-    const hoy = new Date();
-    const anioActual = hoy.getFullYear();
+<script>
+const contadorSpan = document.getElementById('contador');
+const diasDiv = document.getElementById('dias');
+const fotoDiasDiv = document.getElementById('foto-dias');
+const mesSelect = document.getElementById('mes');
+const fotoInput = document.getElementById('foto-input');
+const fotoPreview = document.getElementById('foto-preview');
+const cargarFotoBtn = document.getElementById('cargar-foto-btn');
+const descargarFotosBtn = document.getElementById('descargar-fotos-btn');
 
-    let historial = JSON.parse(localStorage.getItem('diasGimnasio')) || [];
-    let fotos = JSON.parse(localStorage.getItem('fotosGimnasio')) || {};
-    let fechaSeleccionada = null;
+const meses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const hoy = new Date();
+const anioActual = hoy.getFullYear();
 
-    function actualizarContador() {
-      contadorSpan.textContent = historial.length;
-    }
+let historial = JSON.parse(localStorage.getItem('diasGimnasio')) || [];
+let fotos = JSON.parse(localStorage.getItem('fotosGimnasio')) || {};
+let fechaSeleccionada = null;
 
-    function guardarHistorial() {
-      localStorage.setItem('diasGimnasio', JSON.stringify(historial));
-    }
+function actualizarContador() {
+  contadorSpan.textContent = historial.length;
+}
 
-    function guardarFotos() {
-      localStorage.setItem('fotosGimnasio', JSON.stringify(fotos));
-    }
+function guardarHistorial() {
+  localStorage.setItem('diasGimnasio', JSON.stringify(historial));
+}
+function guardarFotos() {
+  localStorage.setItem('fotosGimnasio', JSON.stringify(fotos));
+}
 
-    function esDiaMarcado(fechaStr) {
-      return historial.includes(fechaStr);
-    }
+function cargarDias(mes) {
+  diasDiv.innerHTML = '';
+  const primerDia = new Date(anioActual, mes, 1).getDay();
+  const diasMes = new Date(anioActual, mes + 1, 0).getDate();
 
-    function alternarDia(fechaStr, elementoDia) {
-      if (esDiaMarcado(fechaStr)) {
-        historial = historial.filter(f => f !== fechaStr);
+  for (let i = 0; i < primerDia; i++) diasDiv.appendChild(document.createElement('div'));
+
+  for (let d = 1; d <= diasMes; d++) {
+    const fecha = `${anioActual}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const el = document.createElement('div');
+    el.className = 'dia';
+    el.textContent = d;
+    if (historial.includes(fecha)) el.classList.add('activo');
+    if (fotos[fecha]) el.innerHTML += ' <span class="icono-foto">📷</span>';
+    el.onclick = () => {
+      fechaSeleccionada = fecha;
+      if (!historial.includes(fecha)) {
+        historial.push(fecha);
         guardarHistorial();
-        guardarFotos();
         actualizarContador();
-        cargarDias(parseInt(mesSelect.value));
-        cargarFotoCalendario();
-        fotoPreview.style.display = 'none';
-        cargarFotoBtn.style.display = 'none';
-        fechaSeleccionada = null;
-        return;
       }
-
-      fechaSeleccionada = fechaStr;
-      historial.push(fechaStr);
-      guardarHistorial();
-      actualizarContador();
-      cargarDias(parseInt(mesSelect.value));
-      cargarFotoCalendario();
-      fotoPreview.style.display = fotos[fechaStr] ? 'block' : 'none';
-      fotoPreview.src = fotos[fechaStr] || '';
-      cargarFotoBtn.style.display = fotos[fechaStr] ? 'none' : 'inline-block';
-    }
-
-    function cargarDias(mes) {
-      diasDiv.innerHTML = '';
-      const primerDia = new Date(anioActual, mes, 1).getDay();
-      const diasEnMes = new Date(anioActual, mes + 1, 0).getDate();
-
-      for (let i = 0; i < primerDia; i++) {
-        diasDiv.appendChild(document.createElement('div'));
-      }
-
-      for (let d = 1; d <= diasEnMes; d++) {
-        const fecha = `${anioActual}-${String(mes + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        const diaEl = document.createElement('div');
-        diaEl.textContent = d;
-        diaEl.className = 'dia';
-        if (esDiaMarcado(fecha)) diaEl.classList.add('activo');
-        if (fotos[fecha]) {
-          const icon = document.createElement('span');
-          icon.textContent = '📷';
-          icon.className = 'icono-foto';
-          diaEl.appendChild(icon);
-        }
-        diaEl.onclick = () => alternarDia(fecha, diaEl);
-        diasDiv.appendChild(diaEl);
-      }
-    }
-
-    function cargarFotoCalendario() {
-      fotoDiasDiv.innerHTML = '';
-      const clickCounters = {};
-      for (const fecha in fotos) {
-        const contenedor = document.createElement('div');
-        const img = document.createElement('img');
-        img.src = fotos[fecha];
-        img.alt = fecha;
-        img.className = 'foto-dia-img';
-        clickCounters[fecha] = 0;
-        img.onclick = () => {
-          clickCounters[fecha]++;
-          if (clickCounters[fecha] === 3) {
-            delete fotos[fecha];
-            guardarFotos();
-            cargarFotoCalendario();
-            fotoPreview.style.display = 'none';
-            clickCounters[fecha] = 0;
-          } else {
-            fotoPreview.src = fotos[fecha];
-            fotoPreview.style.display = 'block';
-            setTimeout(() => {
-              clickCounters[fecha] = 0;
-            }, 1000);
-          }
-        };
-        contenedor.appendChild(img);
-        fotoDiasDiv.appendChild(contenedor);
-      }
-    }
-
-    cargarFotoBtn.onclick = () => {
-      if (fechaSeleccionada && !fotos[fechaSeleccionada]) fotoInput.click();
-    };
-
-    fotoInput.addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (!file || fotos[fechaSeleccionada]) return;
-      const reader = new FileReader();
-      reader.onload = e2 => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 300;
-          const scale = MAX_WIDTH / img.width;
-          canvas.width = MAX_WIDTH;
-          canvas.height = img.height * scale;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          const compressed = canvas.toDataURL('image/jpeg', 0.6);
-          fotos[fechaSeleccionada] = compressed;
-          guardarFotos();
-          cargarDias(parseInt(mesSelect.value));
-          cargarFotoCalendario();
-          fotoPreview.src = compressed;
-          fotoPreview.style.display = 'block';
-          cargarFotoBtn.style.display = 'none';
-        };
-        img.src = e2.target.result;
-      };
-      reader.readAsDataURL(file);
-    });
-
-    meses.forEach((nombre, i) => {
-      const opt = document.createElement('option');
-      opt.value = i;
-      opt.textContent = nombre;
-      if (i === hoy.getMonth()) opt.selected = true;
-      mesSelect.appendChild(opt);
-    });
-
-    mesSelect.onchange = () => {
-      cargarDias(parseInt(mesSelect.value));
+      fotoPreview.src = fotos[fecha] || '';
+      fotoPreview.style.display = fotos[fecha] ? 'block' : 'none';
+      cargarDias(mes);
       cargarFotoCalendario();
     };
+    diasDiv.appendChild(el);
+  }
+}
 
-    actualizarContador();
-    cargarDias(hoy.getMonth());
+function cargarFotoCalendario() {
+  fotoDiasDiv.innerHTML = '';
+  Object.keys(fotos).forEach(fecha => {
+    const img = document.createElement('img');
+    img.src = fotos[fecha];
+    img.className = 'foto-dia-img';
+    img.onclick = () => {
+      fotoPreview.src = fotos[fecha];
+      fotoPreview.style.display = 'block';
+    };
+    fotoDiasDiv.appendChild(img);
+  });
+}
+
+cargarFotoBtn.onclick = () => {
+  if (fechaSeleccionada && !fotos[fechaSeleccionada]) fotoInput.click();
+};
+
+fotoInput.onchange = e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    fotos[fechaSeleccionada] = ev.target.result;
+    guardarFotos();
+    cargarDias(parseInt(mesSelect.value));
     cargarFotoCalendario();
-  </script>
+    fotoPreview.src = ev.target.result;
+    fotoPreview.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+};
+
+descargarFotosBtn.onclick = () => {
+  const keys = Object.keys(fotos);
+  if (!keys.length) {
+    alert("No hay fotos para descargar");
+    return;
+  }
+  keys.forEach(fecha => {
+    const a = document.createElement('a');
+    a.href = fotos[fecha];
+    a.download = `Gym_${fecha}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  });
+  alert(`Se descargaron ${keys.length} fotos`);
+};
+
+meses.forEach((m,i)=>{
+  const o = document.createElement('option');
+  o.value=i; o.textContent=m;
+  if(i===hoy.getMonth()) o.selected=true;
+  mesSelect.appendChild(o);
+});
+
+mesSelect.onchange = () => {
+  cargarDias(parseInt(mesSelect.value));
+  cargarFotoCalendario();
+};
+
+actualizarContador();
+cargarDias(hoy.getMonth());
+cargarFotoCalendario();
+</script>
+
 </body>
 </html>
